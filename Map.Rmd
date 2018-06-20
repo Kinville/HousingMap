@@ -1,0 +1,99 @@
+---
+title:  "Geospatial Analysis for the Housing Authority of Salt Lake County"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+date: "June 2018"
+---
+
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, include=FALSE}
+library(ggmap)
+library(leaflet)
+library(googlesheets)
+library(plyr)
+library(dplyr)
+library(naniar)
+library(tidyr)
+library(visdat)
+library(janitor)
+
+```
+
+
+```{r}
+
+gs_ls("HACSLdata")
+hacsl <- gs_title("HACSLdata")
+lease <- hacsl %>% gs_read(ws = 4)
+
+lease1 <- lease %>% 
+  mutate(Address = paste0(StreetAddress,", ",City,", ",State))
+
+geocodes <- geocode(lease1$Address, output = c("latlon"))
+
+lease2 <- bind_cols(lease1,geocodes)
+
+vis_dat(lease2)
+
+rerun <- lease2[is.na(lease2$lon),]
+
+geocodes1 <- geocode(rerun$Address, output = c("latlon"))
+
+rerun$lat <- NULL
+rerun$lon <- NULL
+
+rerun1 <- bind_cols(rerun,geocodes1)
+
+vis_dat(rerun1)
+
+# write_rds(finalgeodata, "~/Desktop/finalgeocodes.rds")
+# 
+# finalgeodata <- read_rds("~/Desktop/finalgeocodes.rds")
+
+```
+
+
+```{r}
+
+# geocodes <- read_excel('~/Google Drive/SI/DataScience/Side projects/Ventura Preschool /raw_data/finalgeocodes1 .xlsx')
+# 
+# QRIS1AND2 <- subset(final_df, overallqris_trating == 1 | overallqris_trating == 2)
+# 
+# QRIS3 <- subset(final_df, overallqris_trating == 3)
+# QRIS4AND5 <- subset(final_df, overallqris_trating == 4 | overallqris_trating == 5)
+# 
+# colnames(geocodes)[colnames(geocodes) == 'lon'] <- 'lng'
+# 
+# QRSADRS1 <- merge(select(QRIS1AND2,site_name.x),geocodes, by="row.names",all.x=TRUE)
+# 
+# QRSADRS3 <- merge(select(QRIS3,site_name.x),geocodes, by="row.names",all.x=TRUE)
+# QRSADRS4 <- merge(select(QRIS4AND5,site_name.x),geocodes, by="row.names",all.x=TRUE)
+# 
+# NA_df <- rbind(subset(QRSADRS1, is.na(lat)),subset(QRSADRS3, is.na(lat)),subset(QRSADRS4, is.na(lat)))
+
+
+HousingMap <- leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+    addAwesomeMarkers(lease2$lon, lease2$lat, popup = lease2$Stuturetype, icon = awesomeIcons(icon = "ion-university", library = 'fa', markerColor = 'lightblue'))%>%
+    # addMarkers(clusterOptions = markerClusterOptions()) %>% 
+   addControl(html = "<img src = 'http://static1.squarespace.com/static/57e1fc9c20099e1414dc6070/t/588831041e5b6c469bd404ac/1495638046187/?format=200w'>", position = "topright")
+
+
+leaflet(HousingMap) %>% addTiles %>% addMarkers(
+  clusterOptions = markerClusterOptions()
+)
+
+HousingMap
+```
+
+
+
+
+
+
+
+
+
+
