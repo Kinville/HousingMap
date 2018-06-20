@@ -18,44 +18,67 @@ library(naniar)
 library(tidyr)
 library(visdat)
 library(janitor)
+library(tidyverse)
+library(fs)
 
 ```
 
 
-```{r}
+```{r echo=FALSE}
 
-gs_ls("HACSLdata")
-hacsl <- gs_title("HACSLdata")
-lease <- hacsl %>% gs_read(ws = 4)
-
-lease1 <- lease %>% 
-  mutate(Address = paste0(StreetAddress,", ",City,", ",State))
-
-geocodes <- geocode(lease1$Address, output = c("latlon"))
-
-lease2 <- bind_cols(lease1,geocodes)
-
-vis_dat(lease2)
-
-rerun <- lease2[is.na(lease2$lon),]
-
-geocodes1 <- geocode(rerun$Address, output = c("latlon"))
-
-rerun$lat <- NULL
-rerun$lon <- NULL
-
-rerun1 <- bind_cols(rerun,geocodes1)
-
-vis_dat(rerun1)
-
-# write_rds(finalgeodata, "~/Desktop/finalgeocodes.rds")
+# gs_ls("HACSLdata")
+# hacsl <- gs_title("HACSLdata")
+# lease <- hacsl %>% gs_read(ws = 4)
 # 
-# finalgeodata <- read_rds("~/Desktop/finalgeocodes.rds")
+# lease <- lease %>%
+#   separate(StreetAddress, c("Street","House Number"), sep = "\\#")
+# 
+# lease1 <- lease %>%
+#   mutate(Address = paste0(Street," ",City,", ",State))
+# 
+# geocodes <- geocode(lease1$Address, output = c("latlon"))
+# 
+# lease2 <- bind_cols(lease1,geocodes)
+# 
+# vis_dat(lease2)
+# 
+# rerun <- lease2[is.na(lease2$lon),]
+# 
+# lease3 <- lease2 %>%
+#   filter(!is.na(lon))
+# 
+# geocodes1 <- geocode(rerun$Address, output = c("latlon"))
+# 
+# rerun$lat <- NULL
+# rerun$lon <- NULL
+# 
+# rerun1 <- bind_cols(rerun,geocodes1)
+# 
+# rerun2 <- rerun1[is.na(rerun1$lon),]
+# 
+# rerungood <- rerun1 %>%
+#   filter(!is.na(lon))
+# 
+# geocodes2 <- geocode(rerun2$Address, output = c("latlon"))
+# 
+# rerun2$lat <- NULL
+# rerun2$lon <- NULL
+# 
+# rerungood1 <- bind_cols(rerun2,geocodes2)
+# 
+# finalgeo <- bind_rows(lease3,rerungood,rerungood1)
+# 
+# vis_dat(finalgeo)
+# 
+# write_rds(finalgeo, path_expand("~/Desktop/finalgeo.rds"))
+
+finalgeo <- read_rds(path_expand("~/Desktop/finalgeo.rds"))
+
 
 ```
 
 
-```{r}
+```{r echo=FALSE}
 
 # geocodes <- read_excel('~/Google Drive/SI/DataScience/Side projects/Ventura Preschool /raw_data/finalgeocodes1 .xlsx')
 # 
@@ -76,14 +99,8 @@ vis_dat(rerun1)
 
 HousingMap <- leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>%
-    addAwesomeMarkers(lease2$lon, lease2$lat, popup = lease2$Stuturetype, icon = awesomeIcons(icon = "ion-university", library = 'fa', markerColor = 'lightblue'))%>%
-    # addMarkers(clusterOptions = markerClusterOptions()) %>% 
+    addAwesomeMarkers(finalgeo$lon, finalgeo$lat, popup = finalgeo$Stuturetype, icon = awesomeIcons(icon = "ion-university", library = 'fa', markerColor = 'darkblue'), clusterOptions = markerClusterOptions())%>%
    addControl(html = "<img src = 'http://static1.squarespace.com/static/57e1fc9c20099e1414dc6070/t/588831041e5b6c469bd404ac/1495638046187/?format=200w'>", position = "topright")
-
-
-leaflet(HousingMap) %>% addTiles %>% addMarkers(
-  clusterOptions = markerClusterOptions()
-)
 
 HousingMap
 ```
